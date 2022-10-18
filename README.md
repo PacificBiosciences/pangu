@@ -1,6 +1,6 @@
 # Pangu: A star-typer for long-read PGx applications
 
-The PacBio CYP2D6 star-typer (Pangu) for whole genome sequencing, capture, enrichment, and amplicon data. This caller leverages the accuracy and length of HiFi reads to confidently call star alleles, including structurally diverse alleles. The caller produces [pharmvar](https://www.pharmvar.org/gene/CYP2D6) compatible definitions. 
+The PacBio star-typer (Pangu) for whole genome sequencing, capture, enrichment, and amplicon data. This caller leverages the accuracy and length of HiFi reads to confidently call star alleles, including structurally diverse alleles. The caller produces [pharmvar](https://www.pharmvar.org/gene/CYP2D6) compatible definitions. Currently calling CYP2D6.
 
 # Demo Dataset
 
