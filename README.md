@@ -53,6 +53,10 @@ Then add the full path to the reference in the file `genes/CYP2D6.yaml` (first s
 # (use the --grayscale option if you don't like the colors!)
 # use logLevel DEBUG for more details on the allele calling
 ./pangu -p outdir/sample_name --verbose -x --logLevel DEBUG  <inBam>  
+
+# Default calling mode is 'wgs'.  
+# Use capture/amplicon/consensus modes for other data types
+./pangu -p outdir/sample_name --verbose -x --mode consensus --logLevel DEBUG  <inBam>
 ```
 
 ## Caller Outputs
