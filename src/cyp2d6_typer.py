@@ -464,13 +464,13 @@ class Diplotype:
                                 mult = 1
                             else:
                                 mult = hcount
-                        suffix = allele if ( mult == 1 ) else f'{allele}x{mult}'
+                        upstream = allele if ( mult == 1 ) else f'{allele}x{mult}'
                         lbls = []
                         for a in [parent,allele]:
                             a_lbls = calls.pop(a)
                             lbls.append( a_lbls[0] )
                             calls[a] = a_lbls[1:]
-                        self.haplotypes.append( ( f'{parent}+{suffix}', lbls ) )
+                        self.haplotypes.append( ( f'{upstream}+{parent}', lbls ) )
                         nosv[ parent ] -= 1
                         pcount -= 1
                         hybs[ alleles ] -= mult
