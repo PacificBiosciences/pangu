@@ -1,23 +1,27 @@
 #! /usr/bin/env python
 
 __version__ = '0.1.0'
-import os
 import sys
+import os
 import logging
 import json
+from pathlib import Path
 from itertools import repeat
 from src.cyp2d6_typer import StarTyper
 
 def main( parser ):
     args = parser.parse_args()
-    sep = '' if args.prefix.endswith('/') else '_'
 
-    if args.logFile is None:
-        logfile = f'{args.prefix}{sep}caller.log'
+    # set up output prefix
+    path = Path( args.prefix )
+    if path.is_dir():
+        prefix = lambda name: f'{path / name}' 
+    elif path.parent.is_dir():
+        prefix = lambda name: f'{path}_{name}'
     else:
-        logfile = args.logFile
-    #make sure log directory exists
-    os.makedirs( os.path.dirname( logfile ), exist_ok=True )
+        raise CYP2D6_typer_Error( f'Cannot create output for prefix {path}' )
+
+    logfile = prefix( 'caller.log' ) if args.logFile is None else args.logFile
 
     typer = StarTyper( args.config_yaml, 
                        logFile=logfile, 
@@ -49,14 +53,13 @@ def main( parser ):
     for bamfile, vcffile in zip( bamgen, vcfgen ):
         typer.run( bamfile, vcffile )
         if args.exportLabeledReads:
-            fname = bamfile.split( '/' )[ -1 ].rsplit( '.', 1 )[ 0 ]
-            ofile = f'{args.prefix}{sep}labeledReads.bam'
+            ofile = prefix( 'labeledReads.bam' )
             typer.log.info( f'Exporting {ofile}' )
             typer.bamRegion.exportSubset( None, ofile, 
                                           labelMap=typer.diplotype.callMap,
                                           colorMap=typer.diplotype.colorMap )
     # write report
-    with open( f'{args.prefix}{sep}report.json', 'w' ) as report:
+    with open( prefix( 'report.json' ), 'w' ) as report:
         report.write( json.dumps( typer.report, indent=4 ) )
 
     return typer
@@ -91,8 +94,6 @@ if __name__ == '__main__':
                          help='Seed for random generator.  Default 42' ) 
  
     outputp = parser.add_argument_group( 'Output Options' )
-    outputp.add_argument( '-d','--details', dest='details', action='store_true', default=False,
-                         help='Report Call details (not working yet)' )
     outputp.add_argument( '-x','--exportLabeledReads', dest='exportLabeledReads', action='store_true', default=False,
                          help='Write labeled reads to output prefix' )
     outputp.add_argument( '-g','--grayscale', dest='grayscale', action='store_true', default=False,
