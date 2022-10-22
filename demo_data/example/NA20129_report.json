@@ -1,0 +1,46 @@
+[
+    {
+        "input": "demo_data/NA20129_wgs.GRCh38.bam",
+        "diplotype": "CYP2D6 *4x2/*5",
+        "haplotypes": [
+            {
+                "call": "*4x2",
+                "alleles": [
+                    {
+                        "call": "*4",
+                        "num_reads": 24,
+                        "meanCover": 16.54,
+                        "maxCover": 19,
+                        "minCover": 15,
+                        "rsIDs": [
+                            "rs3892097"
+                        ]
+                    },
+                    {
+                        "call": "*4",
+                        "num_reads": 13,
+                        "meanCover": 11.53,
+                        "maxCover": 13,
+                        "minCover": 10,
+                        "rsIDs": [
+                            "rs3892097"
+                        ]
+                    }
+                ]
+            },
+            {
+                "call": "*5",
+                "alleles": [
+                    {
+                        "call": "*5",
+                        "num_reads": 10,
+                        "meanCover": 1.89,
+                        "maxCover": 2,
+                        "minCover": 1,
+                        "rsIDs": []
+                    }
+                ]
+            }
+        ]
+    }
+]

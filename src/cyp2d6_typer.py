@@ -1,6 +1,7 @@
 import pysam
 import re
 import os
+import json
 import pandas as pd
 import numpy as np
 from scipy.stats import entropy
@@ -32,6 +33,7 @@ class StarTyper:
         self.randGen   = np.random.default_rng( randSeed )
         self.grayscale = grayscale
         self.callMode = callMode
+        self.report   = []
 
     def run( self, sampleBam, vcf=None ):
         '''
@@ -67,8 +69,7 @@ class StarTyper:
         self.log.info( 'Calling Diplotype' )
         self.diplotype._make_diplotype()
         self.log.info( f'Diplotype called: {self.diplotype}' )
-        self.log.debug( f'Core Variants (with rsID): {self.diplotype.rsIDs}' )
-
+        self.report.append( self.makeReport() )
         return self.diplotype.diplotype
 
     def _loadCoreMeta( self, metaFile ):
@@ -239,9 +240,7 @@ class StarTyper:
         if idxs.empty:
             return {}
         start, stop = self.config[ 'genes' ][ 'CYP2D6' ]
-        cov         = self.readMeta.loc[ idxs ]\
-                          .groupby( 'HP' )\
-                          .apply( lambda hp: self.bamRegion.getConsensusVariants( hp.index, start=start, stop=stop ) )
+        cov = self._getConsensus( idxs, start, stop, suppressWarnings=True )
         if ( cov.coverage < self.minCov ).any():
             self.log.warning( f'LOW COVERAGE VARIANTS CALLED' ) 
         res         = cov.VAR.unstack( level=0 ).fillna( '.' )
@@ -252,6 +251,36 @@ class StarTyper:
         getStar = self._starMatches( ( start, stop ) )
         return { hp : getStar( coreMatches[ [ 'coreAllele', 'VAR', hp ] ].query( f'VAR == {hp}' ) )
                 for hp in coreMatches.columns[ 2: ] }        
+
+    def makeReport( self ):
+        idxs = self.readMeta.query( 'HP != "-1"' ).index
+        start, stop = self.config[ 'genes' ][ 'CYP2D6' ]
+        cons = self._getConsensus( idxs, start, stop ) 
+        stats = cons.groupby( 'HP' ).coverage.describe()
+        res = dict( input=self.bamRegion.sampleBam, 
+                    diplotype=str( self.diplotype ),
+                    haplotypes=[] )
+        for i, (hap, hpTags) in enumerate( self.diplotype.haplotypes ):
+            hapData = dict( call=hap, alleles=[] )
+            for j, tag in enumerate( hpTags ):
+                allele = self.diplotype.callMap[ tag ].split()[-1]
+                alleleData = dict(
+                    call=      allele,
+                    num_reads= self.readMeta.query('HP==@tag').index.get_level_values('hifi_read').nunique(),
+                    meanCover= round( stats.loc[ tag ]["mean"], 2 ),
+                    maxCover=  int( stats.loc[ tag ]["max"] ),
+                    minCover=  int( stats.loc[ tag ]["min"] ),
+                    rsIDs   =  self.diplotype.rsIDs[ hap ].get( allele, [] )
+                )
+                hapData[ 'alleles' ].append( alleleData )
+            res[ 'haplotypes' ].append( hapData )
+        return res
+
+    def _getConsensus( self, idxs, start, stop, suppressWarnings=False ):
+        consFunc = lambda hp: self.bamRegion.getConsensusVariants( hp.index, start=start, stop=stop, suppressWarnings=suppressWarnings )
+        return self.readMeta.loc[ idxs ]\
+                            .groupby( 'HP' )\
+                            .apply( consFunc )
 
     def _hasAllCoreVars( self, region=None ):
         ' region is a tuple of coordinates to restrict counting (defaults to chr22) '
@@ -503,8 +532,8 @@ class Diplotype:
 
     def get_rsIDs( self, haps ):
         spatt = re.compile( '\*(\d+)' )
-        return { hap: [ ( a.group(), self.coreMeta.rsID.get( int( a.groups()[0] ), [] ) )
-                      for a in spatt.finditer( hap if type( hap ) == str else hap[0] ) ]
+        return { hap: { a.group() : self.coreMeta.rsID.get( int( a.groups()[0] ), [] ) 
+                      for a in spatt.finditer( hap if type( hap ) == str else hap[0] ) }
                 for hap,labels in haps }
     
     def joinHaplotypes( self, haps ):

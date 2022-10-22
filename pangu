@@ -4,14 +4,15 @@ __version__ = '0.1.0'
 import os
 import sys
 import logging
+import json
 from itertools import repeat
 from src.cyp2d6_typer import StarTyper
 
 def main( parser ):
     args = parser.parse_args()
+    sep = '' if args.prefix.endswith('/') else '_'
 
     if args.logFile is None:
-        sep = '' if args.prefix.endswith('/') else '_'
         logfile = f'{args.prefix}{sep}caller.log'
     else:
         logfile = args.logFile
@@ -47,7 +48,6 @@ def main( parser ):
     
     for bamfile, vcffile in zip( bamgen, vcfgen ):
         typer.run( bamfile, vcffile )
-        sep = '' if args.prefix.endswith('/') else '.'
         if args.exportLabeledReads:
             fname = bamfile.split( '/' )[ -1 ].rsplit( '.', 1 )[ 0 ]
             ofile = f'{args.prefix}{sep}labeledReads.bam'
@@ -55,6 +55,10 @@ def main( parser ):
             typer.bamRegion.exportSubset( None, ofile, 
                                           labelMap=typer.diplotype.callMap,
                                           colorMap=typer.diplotype.colorMap )
+    # write report
+    with open( f'{args.prefix}{sep}report.json', 'w' ) as report:
+        report.write( json.dumps( typer.report, indent=4 ) )
+
     return typer
 
 class CYP2D6_typer_Error( Exception ):

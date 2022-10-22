@@ -65,12 +65,63 @@ Results will be generated with the prefix given, else in the cwd.  Diplotype cal
 If you include the `-v,--verbose` option, results will be printed to the screen.
 ```
 ./pangu -p demo_data/example/NA20129 -x -v demo_data/NA20129_wgs.GRCh38.bam
-2022-10-18 15:27:27,861 | INFO | Processing demo_data/NA20129_wgs.GRCh38.bam
-2022-10-18 15:27:36,423 | INFO | Identifying SV signatures
-2022-10-18 15:27:39,752 | INFO | Phasing and Calling Alleles
-2022-10-18 15:27:52,644 | INFO | Calling Diplotype
-2022-10-18 15:27:52,645 | INFO | Diplotype called: CYP2D6 *4x2/*5
-2022-10-18 15:27:52,645 | INFO | Exporting demo_data/example/NA20129.labeledReads.bam
+2022-10-21 18:46:39,921 | INFO | Processing demo_data/NA20129_wgs.GRCh38.bam
+2022-10-21 18:46:47,426 | INFO | Identifying SV signatures
+2022-10-21 18:46:50,005 | INFO | Phasing and Calling Alleles
+2022-10-21 18:47:01,908 | INFO | Calling Diplotype
+2022-10-21 18:47:01,908 | INFO | Diplotype called: CYP2D6 *4x2/*5
+2022-10-21 18:47:07,317 | WARNING | 4272 bases in variant region with coverage < 3
+2022-10-21 18:47:18,207 | INFO | Exporting demo_data/example/NA20129_labeledReads.bam
+```
+Detailed results can be found in the `<prefix>_report.json` file
+```
+cat demo_data/example/NA20129_report.json
+[
+    {
+        "input": "demo_data/NA20129_wgs.GRCh38.bam",
+        "diplotype": "CYP2D6 *4x2/*5",
+        "haplotypes": [
+            {
+                "call": "*4x2",
+                "alleles": [
+                    {
+                        "call": "*4",
+                        "num_reads": 24,
+                        "meanCover": 16.54,
+                        "maxCover": 19,
+                        "minCover": 15,
+                        "rsIDs": [
+                            "rs3892097"
+                        ]
+                    },
+                    {
+                        "call": "*4",
+                        "num_reads": 13,
+                        "meanCover": 11.53,
+                        "maxCover": 13,
+                        "minCover": 10,
+                        "rsIDs": [
+                            "rs3892097"
+                        ]
+                    }
+                ]
+            },
+            {
+                "call": "*5",
+                "alleles": [
+                    {
+                        "call": "*5",
+                        "num_reads": 10,
+                        "meanCover": 1.89,
+                        "maxCover": 2,
+                        "minCover": 1,
+                        "rsIDs": []
+                    }
+                ]
+            }
+        ]
+    }
+]
 ```
 Color:
 

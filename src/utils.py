@@ -378,7 +378,7 @@ class BamRegionViewer:
             res = 'notPhased'
         return { 'HP' : str( res ) }
 
-    def getConsensusVariants( self, idxs, positions=None, start=None, stop=None ):
+    def getConsensusVariants( self, idxs, positions=None, start=None, stop=None, suppressWarnings=False ):
         if positions is not None:
             columns=positions
         elif start is not None and stop is not None:
@@ -388,7 +388,8 @@ class BamRegionViewer:
         pile      = self.pileup.reindex( index=idxs, columns=columns )
         coverage  = pile.notnull().sum()
         counts    = pile.apply( lambda p: p.value_counts() )
-        plurality = counts.apply( lambda c: c.idxmax() )
+        plurality = counts.apply( lambda c: c.idxmax() ) if len( counts ) \
+                    else pd.Series( None, index=counts.columns, dtype=int )
         support   = counts.apply( lambda c: c.max() ).fillna( 0 ).astype( int )
         variants  = plurality[ plurality != 1 ]
         res       = pd.concat( [ coverage, variants, support ], axis=1 ).fillna( '.' )
@@ -396,9 +397,9 @@ class BamRegionViewer:
         # some warnings
         dropped = res.coverage == 0
         lowcov  = res.coverage < self.minCov
-        if dropped.any():
+        if dropped.any() and not suppressWarnings:
             self.log.warn( f'{dropped.sum()} bases in variant region with no coverage' )
-        if lowcov.any():
+        if lowcov.any() and not suppressWarnings:
             self.log.warn( f'{lowcov.sum()} bases in variant region with coverage < {self.minCov}' )
         return res 
 
