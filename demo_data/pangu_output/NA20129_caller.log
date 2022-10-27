@@ -1,6 +1,0 @@
-2022-10-18 15:27:27,861 | INFO | Processing demo_data/NA20129_wgs.GRCh38.bam
-2022-10-18 15:27:36,423 | INFO | Identifying SV signatures
-2022-10-18 15:27:39,752 | INFO | Phasing and Calling Alleles
-2022-10-18 15:27:52,644 | INFO | Calling Diplotype
-2022-10-18 15:27:52,645 | INFO | Diplotype called: CYP2D6 *4x2/*5
-2022-10-18 15:27:52,645 | INFO | Exporting demo_data/NA20129.labeledReads.bam
