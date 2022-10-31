@@ -1,7 +1,7 @@
-2022-10-21 18:46:39,921 | INFO | Processing demo_data/NA20129_wgs.GRCh38.bam
-2022-10-21 18:46:47,426 | INFO | Identifying SV signatures
-2022-10-21 18:46:50,005 | INFO | Phasing and Calling Alleles
-2022-10-21 18:47:01,908 | INFO | Calling Diplotype
-2022-10-21 18:47:01,908 | INFO | Diplotype called: CYP2D6 *4x2/*5
-2022-10-21 18:47:07,317 | WARNING | 4272 bases in variant region with coverage < 3
-2022-10-21 18:47:18,207 | INFO | Exporting demo_data/example/NA20129_labeledReads.bam
+2022-10-31 11:45:30,413 | INFO | Processing demo_data/NA20129_wgs.GRCh38.bam
+2022-10-31 11:45:37,363 | INFO | Identifying SV signatures
+2022-10-31 11:45:39,835 | INFO | Phasing and Calling Alleles
+2022-10-31 11:45:50,970 | INFO | Calling Diplotype
+2022-10-31 11:45:50,971 | INFO | Diplotype called: CYP2D6 *4x2/*5
+2022-10-31 11:45:56,058 | WARNING | 4272 bases in variant region with coverage < 3
+2022-10-31 11:46:06,234 | INFO | Exporting demo_data/example/NA20129_labeledReads.bam

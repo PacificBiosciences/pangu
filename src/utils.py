@@ -10,7 +10,20 @@ from scipy.stats import entropy
 from scipy.linalg import svd, diagsvd
 from sklearn.cluster import KMeans
 
-def getLogger( name, filename, stdout=False, logLevel='DEBUG'):
+class QueuingHandler(logging.Handler):
+    """A thread safe logging.Handler that writes messages into a queue object.
+    """
+    def __init__(self, *args, message_queue, **kwargs):
+        """Initialize by copying the queue and sending everything else to superclass."""
+        logging.Handler.__init__(self, *args, **kwargs)
+        self.message_queue = message_queue
+
+    def emit(self, record):
+        """Add the formatted log message (sans newlines) to the queue."""
+        self.message_queue.put(self.format(record).rstrip('\n'))
+
+
+def getLogger( name, filename, message_queue, stdout=False, logLevel='DEBUG'):
     logger = logging.getLogger( name )
     level  = getattr( logging, logLevel )
     formatter = logging.Formatter( '%(asctime)s | %(levelname)s | %(message)s' )
@@ -18,6 +31,11 @@ def getLogger( name, filename, stdout=False, logLevel='DEBUG'):
     fhandler.setLevel( level )
     fhandler.setFormatter( formatter )
     logger.addHandler( fhandler )
+    # save warnings in queue for exporting later
+    warnqhandler = QueuingHandler( message_queue=message_queue, level=logging.WARNING )
+    wformat = logging.Formatter( '%(message)s' )
+    warnqhandler.setFormatter( wformat )
+    logger.addHandler( warnqhandler ) 
     if stdout:
         shandler = logging.StreamHandler( sys.stdout )
         shandler.setLevel( level )

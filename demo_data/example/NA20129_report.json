@@ -2,6 +2,7 @@
     {
         "input": "demo_data/NA20129_wgs.GRCh38.bam",
         "diplotype": "CYP2D6 *4x2/*5",
+        "copynumber": 3,
         "haplotypes": [
             {
                 "call": "*4x2",
@@ -41,6 +42,9 @@
                     }
                 ]
             }
+        ],
+        "warnings": [
+            "4272 bases in variant region with coverage < 3"
         ]
     }
 ]

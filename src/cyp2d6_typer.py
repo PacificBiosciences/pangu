@@ -2,6 +2,7 @@ import pysam
 import re
 import os
 import json
+import queue
 import pandas as pd
 import numpy as np
 from scipy.stats import entropy
@@ -24,7 +25,8 @@ class StarTyper:
         self.config    = loadConfig( config_yaml )
         self.reference = self.config[ 'reference' ]
         self.minCov    = self.config[ 'minCov' ][ callMode ]
-        self.log       = getLogger( self.__repr__(), logFile, stdout=verbose, logLevel=logLevel )
+        self.warnings  = queue.Queue()
+        self.log       = getLogger( self.__repr__(), logFile, self.warnings, stdout=verbose, logLevel=logLevel )
         self.svtyper   = SvTyper( self.config, self.log )  
         self.bamRegion = BamRegionViewer( self.config, minCov=self.minCov, logger=self.log )
         self.coreVar   = pd.read_csv( self.config[ 'coreVariants' ], index_col=0 )
@@ -257,9 +259,15 @@ class StarTyper:
         start, stop = self.config[ 'genes' ][ 'CYP2D6' ]
         cons = self._getConsensus( idxs, start, stop ) 
         stats = cons.groupby( 'HP' ).coverage.describe()
+        count = sum( 2 if 'x2' in calls[0] else 1 for _,alleles in self.diplotype.calls.items() for _,calls in alleles.items() )
+        warnings = []
+        while not self.warnings.empty():
+            warnings.append( self.warnings.get() )
         res = dict( input=self.bamRegion.sampleBam, 
                     diplotype=str( self.diplotype ),
-                    haplotypes=[] )
+                    copynumber=count,
+                    haplotypes=[],
+                    warnings=warnings )
         for i, (hap, hpTags) in enumerate( self.diplotype.haplotypes ):
             hapData = dict( call=hap, alleles=[] )
             for j, tag in enumerate( hpTags ):
