@@ -123,7 +123,7 @@ minFreq:  # min frequency reads to consider a variant
     wgs: 0
     capture: 0.1
     amplicon: 0.1
-    consensus: 1 
+    consensus: 0 
 
 # Star allele mappings of SV calls
 starAlleles:
