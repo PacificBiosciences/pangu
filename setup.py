@@ -11,7 +11,7 @@ def get_install_requires():
     return targets
 
 setup(name='HiPGx',
-      version='0.1.0',
+      version='0.1.1',
       description='Star Allele Caller for HiFi sequencing',
       author='John Harting',
       author_email='jharting@pacb.com',

@@ -1,3 +1,4 @@
+__version__ = '0.1.1'
 import pysam
 import re
 import os
@@ -25,10 +26,11 @@ class StarTyper:
         self.config    = loadConfig( config_yaml )
         self.reference = self.config[ 'reference' ]
         self.minCov    = self.config[ 'minCov' ][ callMode ]
+        self.minFreq   = self.config[ 'minFreq' ][ callMode ]
         self.warnings  = queue.Queue()
         self.log       = getLogger( self.__repr__(), logFile, self.warnings, stdout=verbose, logLevel=logLevel )
         self.svtyper   = SvTyper( self.config, self.log )  
-        self.bamRegion = BamRegionViewer( self.config, minCov=self.minCov, logger=self.log )
+        self.bamRegion = BamRegionViewer( self.config, minCov=self.minCov, minFreq=self.minFreq, logger=self.log )
         self.coreVar   = pd.read_csv( self.config[ 'coreVariants' ], index_col=0 )
         self.coreMeta  = self._loadCoreMeta( self.config[ 'coreMetaData' ] )
         self.diplotype = Diplotype( self.config, self.log, self.coreMeta, grayscale )
@@ -144,14 +146,22 @@ class StarTyper:
             ridx = self.readMeta.loc[ creads.index ].query( 'SVlabel.isnull()' ).index
             self.readMeta.loc[ ridx, 'SVlabel' ] = self.randGen.choice( ['dup_rand_upstream', 'dup_rand_downstream'], size=len( ridx ) )
         
-            #now re-phase reads, if possible and reassign calls (skip this for capture data atm)
+            #now re-phase reads, if possible and reassign calls
+            #for capture data, we restict possible splits to variants on reads with dup SV sigs
             for position, atype in [ ( 'upstream', 'noSV' ),
                                      ( 'downstream', 'duplicate') ]:
                 idxs     = self.readMeta[ self.readMeta.SVlabel.fillna('').str.endswith( position ) 
                                          & self.readMeta.HP.isin( labels ) ].index
+                candIdx = self.readMeta.loc[ idxs ].query( 'SV.notnull()' ).index \
+                          if ( self.callMode == 'capture' ) \
+                             and ( position == 'upstream' ) \
+                             and ( len( set( noSV.values() ) ) >= 2 ) \
+                          else None #none = all
+                    
                 prevCall = self.diplotype.calls.get( atype, {} ) if atype == 'noSV' else { **dupcalls, **round1_dups.to_dict() }
                 offset   = max( [int( hp.split('_')[-1] ) for hp in prevCall.keys() ], default=-1 )  + 1
-                clusters = self.bamRegion.updateHaplotypes( idxs, label=atype, window=window, offset=offset, round=2 )
+                clusters = self.bamRegion.updateHaplotypes( idxs, label=atype, window=window, 
+                                                            offset=offset, round=2, candidateSubset=candIdx )
                 #remove old noSV labels
                 if atype == 'noSV':
                     for hp in labels:
@@ -425,6 +435,15 @@ class Diplotype:
     def __repr__( self ):
         gene = 'CYP2D6'
         return f'{gene} {self.diplotype}'
+
+    def pharmCat( self ):
+        gene = 'CYP2D6'
+        def getPharmCat( hap ):
+            if '+' in hap:
+                return f'[{" + ".join( hap.split("+") )}]'
+            else:
+                return hap
+        return f'{gene}\t{"/".join( getPharmCat( hap ) for hap,_ in self.haplotypes )}'
     
     def reset( self ):
         self.__init__( self.config, self.log, self.coreMeta, self.grayscale )
@@ -547,7 +566,7 @@ class Diplotype:
     def joinHaplotypes( self, haps ):
         return '/'.join( h if type( h ) == str else h[0]
                          for h,lbls in haps )
-
+    
     @property
     def callMap( self ):
         def getCall( allele, kind ):

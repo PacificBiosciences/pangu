@@ -1,3 +1,4 @@
+__version__ = '0.1.1'
 import re
 import pandas as pd
 import numpy as np

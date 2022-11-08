@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 import sys
 import os
 import logging
@@ -31,7 +31,7 @@ def main( parser ):
                        randSeed=args.seed,
                        grayscale=args.grayscale ) 
 
-    # make input gnerator
+    # make input gnerators
     if len( args.inBam ) >= 1:
         bamgen = args.inBam
         if args.vcf is not None:
@@ -49,9 +49,19 @@ def main( parser ):
             vcfgen = repeat( None )
     else:
         raise CYP2D6_typer_Error( 'No BAM input' )
+
+    if len( args.inBam ) > 1 or args.bamFofn is not None:
+        #phamrCat requires one sample per file
+        #use bam input as name
+        pharmcat_file = ( lambda bam: prefix( f'{Path( bam ).stem}.pharmcat.tsv'  ) )
+    else:
+        pharmcat_file = ( lambda bam: prefix( 'pharmcat.tsv' ) )
     
     for bamfile, vcffile in zip( bamgen, vcfgen ):
         typer.run( bamfile, vcffile )
+        # export pharmcat callfile
+        open( pharmcat_file( bamfile ), 'w' ).write( f'{typer.diplotype.pharmCat()}\n' )
+        # export reads
         if args.exportLabeledReads:
             ofile = prefix( 'labeledReads.bam' )
             typer.log.info( f'Exporting {ofile}' )

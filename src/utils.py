@@ -1,3 +1,4 @@
+__version__ = '0.1.1'
 import logging
 import sys
 import yaml
@@ -85,7 +86,7 @@ class BamRegionViewer:
                         maxInsertion = re.compile( r"\d+I" ) 
                     )
     
-    def __init__( self, config, resetHP=True, minCov=3, logger=None, logFile='bamloader.log', verbose=False ):
+    def __init__( self, config, resetHP=True, minCov=3, minFreq=0.1, logger=None, logFile='bamloader.log', verbose=False ):
         self.config    = config
         self.reference = config[ 'reference' ]
         self.region    = config[ 'region' ]
@@ -94,6 +95,7 @@ class BamRegionViewer:
         self.minClip   = config[ 'minClip' ]
         self.maxClip   = config[ 'maxClip' ]
         self.minCov    = minCov
+        self.minFreq   = minFreq
         self.hpindex   = self._loadHP( config[ 'homopolymers' ] )
         self.resetHP   = resetHP
         self.vcf       = None
@@ -254,7 +256,7 @@ class BamRegionViewer:
             res[ 'clipSeq_3p' ] = rec.query_sequence[ rec.qend : stop ]
         return res
 
-    def updateHaplotypes( self, idxs, method='svt', label=None, round=1, window=None, offset=0 ):
+    def updateHaplotypes( self, idxs, method='svt', label=None, round=1, candidateSubset=None, window=None, offset=0 ):
         methods = { 'svt' : self._svt }
         if idxs.empty:
             return None
@@ -269,10 +271,12 @@ class BamRegionViewer:
                 self.readMeta.update( label + '_' + clusters.astype( str ) )
             return clusters
         else:
+            # use candidate subset for getting variant pos if defined
+            vIdx = idxs if candidateSubset is None else candidateSubset
             if self.vcf is not None:
-                varPos = self._getVariablePosFromVCF( idxs, minGroups=2, window=window )
+                varPos = self._getVariablePosFromVCF( vIdx, minGroups=2, window=window )
             else:
-                varPos = self._getVariablePos( idxs, minGroups=2, minEntropy=0.2, window=window )
+                varPos = self._getVariablePos( vIdx, minGroups=2, minEntropy=0.2, window=window )
             if varPos.empty:
                 self.log.debug( f'No variable positions found for {lbl}reads. Exiting updateHaplotypes' )
                 return None
@@ -361,14 +365,15 @@ class BamRegionViewer:
         '''Filters: 
             variable pos ; no 1-bp indel next to hp ; 
             avoid low-complexity rgn ; indel less than maxIndel ;
-            no 1-indel < 30% of reads '''
+            no 1-indel < 30% of reads (all), or < minfrac for amp/capture '''
         def filt( p ):
             return   bool(
                                ( p._ngrps >= minGroups ) \
                             & ~( ( p.vtype == '1indel' ) & ( self._checkhp( p.pos ) ) )\
                             & ~( ( p.pos >= 42132023 ) & ( p.pos <= 42132049 ) ) \
                             & ~( ( p.vtype in ['ins','del'] ) & ( p.vlen > maxIndel ) )\
-                            & ~( ( p.vtype == '1indel' ) & ( p.altFrac < 0.30  ) )
+                            & ~( ( p.vtype == '1indel' ) & ( p.altFrac < 0.30  ) )\
+                            & ( p.altFrac >= self.minFreq )
                          )
         return filt
     
@@ -376,7 +381,7 @@ class BamRegionViewer:
         positions = self.vcf.positions if window is None \
                     else self.vcf.positions[ self.vcf.positions.between( *window, inclusive='both' ) ]
         varPos    =   self.fetch( idxs, positions=positions, dropnull=[ False, True ] )\
-                          .apply( lambda c: PileupColumn( c, minCov=self.minCov, dropna=False ) )
+                          .apply( lambda c: PileupColumn( c, minCov=self.minCov, minFreq=self.minFreq, dropna=False ) )
         return varPos[ varPos.map( self._filter_pcolumns( minGroups=minGroups, maxIndel=maxIndel ) ) ]
 
     def _getVariablePos( self, idxs, minGroups=2, window=None, maxIndel=50, minEntropy=0 ):
@@ -384,9 +389,8 @@ class BamRegionViewer:
         # refcall = 1
         start,stop = ( None,None ) if window is None else window
         pileup = self.fetch( idxs, start=start, stop=stop, dropnull=[ False, True ] )
-        minVarCov = self.minCov #- 1 # more sensitive with -1
-        nonRef = ( ( pileup != 1 ) & ( pileup != '*' ) & pileup.notnull() ).sum( axis=0 ) >= minVarCov
-        pcolumn = pileup.loc[ :, nonRef ].apply( lambda c: PileupColumn( c, minCov=minVarCov, dropna=False ) )
+        nonRef = ( ( pileup != 1 ) & ( pileup != '*' ) & pileup.notnull() ).sum( axis=0 ) >= self.minCov
+        pcolumn = pileup.loc[ :, nonRef ].apply( lambda c: PileupColumn( c, minCov=self.minCov, minFreq=self.minFreq, dropna=False ) )
         return pcolumn[ pcolumn.map( self._filter_pcolumns( minGroups=minGroups, maxIndel=maxIndel ) ) ]
 
     def _getHapTag( self, rec ):
@@ -450,10 +454,11 @@ class BamRegionViewer:
         return jaccard
     
 class PileupColumn:
-    def __init__( self, callVector, minCov=3, refCall=1, chrom=None, dropna=True ):
+    def __init__( self, callVector, minCov=3, minFreq=0.1, refCall=1, chrom=None, dropna=True ):
         self.chr     = chrom
         self.pos     = callVector.name
         self.minCov  = minCov
+        self.minFreq = minFreq
         self.refCall = refCall
         self.dropna  = dropna
         self._getCalls( callVector )
@@ -486,7 +491,7 @@ class PileupColumn:
         alts         = self._counts[ self._counts >= self.minCov ].drop( [ self.refCall, nocall, '*' ], errors='ignore' )
         self._ngrps  = int( self._counts.get( self.refCall, 0 ) >= self.minCov ) + len( alts )
         self.vtype   = None if alts.empty else _kind( alts.idxmax() )
-        self.altFrac = 0 if alts.empty else alts.max() / self._counts.sum() 
+        self.altFrac = 0 if alts.empty else alts.max() / self._counts.drop( nocall, errors='ignore' ).sum() 
         self.vlen    = sum( 1 for b in re.finditer( '[AGCT]', alts.idxmax(), re.I ) ) if self.vtype in ['ins','del'] else 1
         self.reads   = { vnt : rows.index for vnt,rows in calls.groupby( calls ) }
 

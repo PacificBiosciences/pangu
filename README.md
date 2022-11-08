@@ -80,6 +80,7 @@ cat demo_data/example/NA20129_report.json
     {
         "input": "demo_data/NA20129_wgs.GRCh38.bam",
         "diplotype": "CYP2D6 *4x2/*5",
+        "copynumber": 3,
         "haplotypes": [
             {
                 "call": "*4x2",
@@ -119,9 +120,11 @@ cat demo_data/example/NA20129_report.json
                     }
                 ]
             }
+        ],
+        "warnings": [
+            "4272 bases in variant region with coverage < 3"
         ]
     }
-]
 ```
 Color:
 
@@ -133,6 +136,11 @@ Grayscale:
 
 ## Release History
 * 0.1.0 - Initial Release (10/18/2022)
+* 0.1.1 - Minor updates to report and amp/capture mode
+  * add minFreq for amplicon and capture data variant finding
+  * include copy number and warnings in json record
+  * add pharmcat-formatted tsv output per sample
+  * stricter rules for phasing of duplicates for capture data
 
 
 ## DISCLAIMER

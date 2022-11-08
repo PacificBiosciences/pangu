@@ -1,6 +1,6 @@
 # reference
 reference:
-    /path/to/GRCh.chr22.fa
+    /home/UNIXHOME/jharting/gitrepos/cyp2d6_wgstyper/data/chr22.fa
 diff_sites: 
     data/diff_sites_CYP2D6.csv
 homopolymers:
@@ -114,10 +114,15 @@ grayscale:
 # General
 tolerance: 20
 phaseTag: HP
-minCov:  # min reads to call an allele
+minCov:  # min reads to consider a variant
     wgs: 3
     capture: 3
     amplicon: 10
+    consensus: 1 
+minFreq:  # min frequency reads to consider a variant
+    wgs: 0
+    capture: 0.1
+    amplicon: 0.1
     consensus: 1 
 
 # Star allele mappings of SV calls
