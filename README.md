@@ -9,6 +9,7 @@ See `demo_data` directory for example HiFi datasets.
 ## Installation
 
 ### Dependencies
+ - python >=3.9
  - [pysam](https://github.com/pysam-developers/pysam)
  - [mappy](https://pypi.org/project/mappy/)
  - [pandas](https://pandas.pydata.org/)
