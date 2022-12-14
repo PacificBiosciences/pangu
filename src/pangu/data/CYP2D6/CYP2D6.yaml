@@ -1,6 +1,6 @@
 # reference
 reference:
-    /home/UNIXHOME/jharting/gitrepos/cyp2d6_wgstyper/data/chr22.fa
+    /path/to/reference/GRCh38_chr22.fa
 diff_sites: 
     pangu/data/CYP2D6/diff_sites_CYP2D6.csv
 homopolymers:
