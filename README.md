@@ -16,14 +16,6 @@ See `demo_data` directory for example HiFi datasets.
  - [scipy](https://scipy.org/)
  - [scikit-learn](https://scikit-learn.org/stable/index.html)
 
-### Installing in a Conda enviroment 
-```
-git clone https://github.com/PacificBiosciences/pangu.git
-conda create --name cyp python=3.9
-cd pangu
-python setup.py install
-```
-
 ### Reference
 
 You need to supply your own GRCh38 reference (with .fai index), as this is too large for the repo.  Use just chromosome 22 to keep analysis faster.
@@ -32,31 +24,44 @@ You need to supply your own GRCh38 reference (with .fai index), as this is too l
 samtools faidx GRCh38_full.fasta chr22 > GRCh38_chr22.fasta && samtools faidx GRCh38_chr22.fasta
 ```
 
-Then add the full path to the reference in the file `genes/CYP2D6.yaml` (first setting at the top).
+### Installation
+## From github 
+```
+git clone https://github.com/PacificBiosciences/pangu.git
+cd pangu
+# Edit the *full path* to the reference in the config file `src/pangu/data/CYP2D6/CYP2D6.yaml` (first setting at the top).
+# so that it points to your downloaded reference
+pip install .
+```
 
-## To run the caller
+## From bioconda (please wait for bioconda PR to be merged)
+```
+conda install -c bioconda pangu
+```
+
+### To run the caller
 
 ```
 # input bam contains HiFi reads aligned to GRCh38
-./pangu -p outdir/sample_name --verbose <inBam>
+pangu -p outdir/sample_name --verbose <inBam>
 
 # Restrict variants used for phasing of reads to positions contained in a vcf (e.g. from DeepVariant).
-./pangu -p outdir/sample_name --verbose --vcf <inVcf> <inBam>
+pangu -p outdir/sample_name --verbose --vcf <inVcf> <inBam>
 
 # Run on multiple samples 
-./pangu -p outdir/sample_name --verbose path/to/data/*bam
+pangu -p outdir/sample_name --verbose path/to/data/*bam
 # or
-./pangu -p outdir/sample_name --verbose --bamFofn bams.fofn
+pangu -p outdir/sample_name --verbose --bamFofn bams.fofn
 
 # Export a bam containing just the reads analyzed for CYP2D6.  
 # Reads are labeled by allele and colored by haplotype.
 # (use the --grayscale option if you don't like the colors!)
 # use logLevel DEBUG for more details on the allele calling
-./pangu -p outdir/sample_name --verbose -x --logLevel DEBUG  <inBam>  
+pangu -p outdir/sample_name --verbose -x --logLevel DEBUG  <inBam>  
 
 # Default calling mode is 'wgs'.  
 # Use capture/amplicon/consensus modes for other data types
-./pangu -p outdir/sample_name --verbose -x --mode consensus --logLevel DEBUG  <inBam>
+pangu -p outdir/sample_name --verbose -x --mode consensus --logLevel DEBUG  <inBam>
 ```
 
 ## Caller Outputs
@@ -64,7 +69,7 @@ Then add the full path to the reference in the file `genes/CYP2D6.yaml` (first s
 Results will be generated with the prefix given, else in the cwd.  Diplotype calls are found in the \<prefix\>[/\_]call.log file.
 If you include the `-v,--verbose` option, results will be printed to the screen.
 ```
-./pangu -p demo_data/example/NA20129 -x -v demo_data/NA20129_wgs.GRCh38.bam
+pangu -p demo_data/example/NA20129 -x -v demo_data/NA20129_wgs.GRCh38.bam
 2022-10-21 18:46:39,921 | INFO | Processing demo_data/NA20129_wgs.GRCh38.bam
 2022-10-21 18:46:47,426 | INFO | Identifying SV signatures
 2022-10-21 18:46:50,005 | INFO | Phasing and Calling Alleles
@@ -80,7 +85,7 @@ cat demo_data/example/NA20129_report.json
     {
         "input": "demo_data/NA20129_wgs.GRCh38.bam",
         "diplotype": "CYP2D6 *4x2/*5",
-        "copynumber": 3,
+        "copynumber": 2,
         "haplotypes": [
             {
                 "call": "*4x2",
@@ -141,6 +146,9 @@ Grayscale:
   * include copy number and warnings in json record
   * add pharmcat-formatted tsv output per sample
   * stricter rules for phasing of duplicates for capture data
+* 0.2.0 - Reorganization of src files, minor bug fix
+  * Updated install via pip and/or bioconda
+  * Fixed copy number counting bug
 
 
 ## DISCLAIMER

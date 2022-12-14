@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pangu"
+description = "Star Allele Caller for HiFi sequencing"
+authors = [ {name = "John Harting", email = "jharting@pacb.com" }, ]
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["PacBio HiFi", "pharmacogenomics", "PGx", "CYP2D6"]
+license = {text = "BSD 3-Clause License"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Bioinformatics",
+    "Topic :: PacBio HiFi"
+]
+dependencies = [
+    "pysam>=0.19.1",
+    "pyyaml",
+    "numpy>=1.23.3",
+    "pandas>=1.5.0",
+    "scipy",
+    "scikit-learn",
+    "mappy>=2.24",
+]
+dynamic = ["version"]
+
+[project.urls]
+repository = "https://github.com/PacificBiosciences/pangu"
+
+[project.scripts]
+pangu = "pangu.__main__:main_cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml","*.csv.gz","*.csv","*.bed","*.txt"]
+
+[tool.setuptools.dynamic]
+version = {attr = "pangu.__main__.__version__"}

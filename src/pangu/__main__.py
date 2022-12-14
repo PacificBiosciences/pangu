@@ -1,13 +1,13 @@
 #! /usr/bin/env python
 
-__version__ = '0.1.1'
+__version__ = '0.2.0'
 import sys
 import os
 import logging
 import json
 from pathlib import Path
 from itertools import repeat
-from src.cyp2d6_typer import StarTyper
+from pangu.cyp2d6_typer import StarTyper
 
 def main( parser ):
     args = parser.parse_args()
@@ -77,12 +77,13 @@ def main( parser ):
 class CYP2D6_typer_Error( Exception ):
     pass
 
-if __name__ == '__main__':
+def main_cli():
     import argparse
+    import pkgutil
     from datetime import datetime
+    from importlib.resources import files
 
     now  = datetime.now().strftime( '%Y-%m-%d_%H%M%S' )
-    bdir = os.path.abspath( os.path.dirname( sys.argv[0] ) )
 
     parser = argparse.ArgumentParser( prog='pangu', description='Call CYP2D6 star alleles from HiFi WGS data' )
     parser.add_argument( 'inBam', metavar='inBam', nargs='*', type=str, help='Aligned BAM file(s) of HiFi WGS reads' )
@@ -94,8 +95,8 @@ if __name__ == '__main__':
                          help='Text file of bam file names.  Default None' )
     inputp.add_argument( '--vcfFofn', dest='vcfFofn', default=None,
                          help='Text file of vcf file names in same order as bamFofn.  Default None' )
-    inputp.add_argument( '--config', dest='config_yaml', default=f'{bdir}/genes/CYP2D6.yaml',
-                         help='Configuration yaml file.  Default "{rundir}/genes/CYP2D6.yaml"' ) 
+    inputp.add_argument( '--config', dest='config_yaml', default=files('pangu.data.CYP2D6').joinpath('CYP2D6.yaml'),
+                         help='Override installed configuration yaml file' ) 
     inputp.add_argument( '-p','--prefix', dest='prefix', default='./',
                          help='Prefix for output files.  Default cwd' ) 
     inputp.add_argument( '-m','--mode', dest='mode', choices=['wgs','amplicon','capture','consensus'], default='wgs',

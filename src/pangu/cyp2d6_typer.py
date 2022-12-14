@@ -1,4 +1,4 @@
-__version__ = '0.1.1'
+__version__ = '0.2.0'
 import pysam
 import re
 import os
@@ -9,8 +9,8 @@ import numpy as np
 from scipy.stats import entropy
 from itertools import chain, product
 from collections import Counter,defaultdict
-from .svcaller import SvTyper
-from .utils import loadConfig, getLogger, BamRegionViewer, BamViewer_Error
+from pangu.svcaller import SvTyper
+from pangu.utils import loadConfig, getLogger, BamRegionViewer, BamViewer_Error
 
         
 class StarTyper:
@@ -269,7 +269,11 @@ class StarTyper:
         start, stop = self.config[ 'genes' ][ 'CYP2D6' ]
         cons = self._getConsensus( idxs, start, stop ) 
         stats = cons.groupby( 'HP' ).coverage.describe()
-        count = sum( 2 if 'x2' in calls[0] else 1 for _,alleles in self.diplotype.calls.items() for _,calls in alleles.items() )
+        count = sum( 1 if not len( calls ) 
+                       else (  2 if 'x2' in calls[0] 
+                                 else ( 0 if calls[0] == '*5' else 1 ) )
+                     for _,alleles in self.diplotype.calls.items() 
+                     for _,calls in alleles.items() )
         warnings = []
         while not self.warnings.empty():
             warnings.append( self.warnings.get() )
