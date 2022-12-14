@@ -1,4 +1,4 @@
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 import logging
 import sys
 import yaml
@@ -6,7 +6,7 @@ import pysam
 import re
 import numpy as np
 import pandas as pd
-from pathlib import Path
+from importlib.resources import files
 from scipy.stats import entropy
 from scipy.linalg import svd, diagsvd
 from sklearn.cluster import KMeans
@@ -60,15 +60,15 @@ OPS = {
       }
 
 def loadConfig( configYaml ):
-    root_dir = Path(__file__).parent.parent
+    data_files = files( 'pangu.data.CYP2D6' )
     with open( configYaml, "r" ) as stream:
         try:
             config = yaml.safe_load( stream )
         except yaml.YAMLError as e:
             raise Config_Error( f'Error reading {configYaml}: \n\n{e}' )
-    # update relative paths in config
-    for key in ['diff_sites','homopolymers','coreVariants','coreMetaData']:
-        config[ key ] = str( root_dir / config[ key ] )
+    #set data locations
+    for key,fname in config[ 'data_files' ].items():
+        config[ key ] = str( data_files.joinpath( fname ) )
     # replace sv rule operator labels with op functions
     # and include "isclose" operator with config tolerance
     ops = { **OPS, **{ '~' : isclose( atol=config['tolerance'] ) } }

@@ -1,18 +1,12 @@
-# reference
-reference:
-    /path/to/reference/GRCh38_chr22.fa
-diff_sites: 
-    pangu/data/CYP2D6/diff_sites_CYP2D6.csv
-homopolymers:
-    pangu/data/CYP2D6/hp_3.bed
-coreVariants:
-    pangu/data/CYP2D6/corevar.5.1.10.csv.gz
-coreMetaData:
-    pangu/data/CYP2D6/coremeta.5.1.10.csv.gz
+#data files
+data_files:
+    reference: GRCh38_chr22.fa
+    diff_sites: diff_sites_CYP2D6.csv
+    homopolymers: hp_3.bed
+    coreVariants: corevar.5.1.10.csv.gz
+    coreMetaData: coremeta.5.1.10.csv.gz
 
 # loci
- # global region for pulling variants
-# region: 'chr22:42125143-42146092'
 region: 'chr22:42118571-42146092'
  # positions encompassing all core variants, incl upstream promoters (pharmvar)
 coreRegion: [ 42126305, 42132395 ]

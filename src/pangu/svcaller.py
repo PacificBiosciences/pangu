@@ -1,4 +1,4 @@
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 import re
 import pandas as pd
 import numpy as np
@@ -15,7 +15,7 @@ class SvTyper:
         self.config          = config
         self.log             = log
         self._aligner        = Aligner( self.config[ 'reference' ] )
-        self.diff_sites      = self._loadDiffs( self.config[ 'diff_sites' ] )
+        self.diff_sites      = self._loadDiffs( config[ 'diff_sites' ] )
         self._hybridPatterns = list( self._makeHybPatterns() )
         self._call_functions = [ self.call_del_and_dup, self.call_hybrid ]
 

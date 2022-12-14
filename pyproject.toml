@@ -36,7 +36,7 @@ pangu = "pangu.__main__:main_cli"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"*" = ["*.yaml","*.csv.gz","*.csv","*.bed","*.txt"]
+"*" = ["*.yaml","*.csv.gz","*.csv","*.bed","*.txt", "*.fa*","*.fa*fai"]
 
 [tool.setuptools.dynamic]
 version = {attr = "pangu.__main__.__version__"}
