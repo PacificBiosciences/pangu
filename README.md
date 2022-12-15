@@ -2,7 +2,7 @@
 
 The PacBio star-typer (Pangu) for whole genome sequencing, capture, enrichment, and amplicon data. This caller leverages the accuracy and length of HiFi reads to confidently call star alleles, including structurally diverse alleles. The caller produces [pharmvar](https://www.pharmvar.org/gene/CYP2D6) compatible definitions. Currently calling CYP2D6.
 
-# Demo Dataset
+## Demo Dataset
 
 See `demo_data` directory for example HiFi datasets.
 
@@ -18,29 +18,21 @@ See `demo_data` directory for example HiFi datasets.
  - [scikit-learn](https://scikit-learn.org/stable/index.html)
 
 ### Reference
+GRCh38 chr22 is included in the repo for convenience.  
 
-You need to supply your own GRCh38 reference (with .fai index), as this is too large for the repo.  Use just chromosome 22 to keep analysis faster.
-
-```
-samtools faidx GRCh38_full.fasta chr22 > GRCh38_chr22.fasta && samtools faidx GRCh38_chr22.fasta
-```
-
-### Installation
-## From github 
+### From github 
 ```
 git clone https://github.com/PacificBiosciences/pangu.git
 cd pangu
-# Edit the *full path* to the reference in the config file `src/pangu/data/CYP2D6/CYP2D6.yaml` (first setting at the top).
-# so that it points to your downloaded reference
 pip install .
 ```
 
-## From bioconda (please wait for bioconda PR to be merged)
+### From bioconda (please wait for bioconda PR to be merged)
 ```
 conda install -c bioconda pangu
 ```
 
-### To run the caller
+## To run the caller
 
 ```
 # input bam contains HiFi reads aligned to GRCh38
@@ -150,6 +142,7 @@ Grayscale:
 * 0.2.0 - Reorganization of src files, minor bug fix
   * Updated install via pip and/or bioconda
   * Fixed copy number counting bug
+* 0.2.1 - Include GRCh38 reference in repo for cleaner install
 
 
 ## DISCLAIMER
