@@ -1,4 +1,4 @@
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 import pysam
 import re
 import os
@@ -30,7 +30,7 @@ class StarTyper:
         self.warnings  = queue.Queue()
         self.log       = getLogger( self.__repr__(), logFile, self.warnings, stdout=verbose, logLevel=logLevel )
         self.svtyper   = SvTyper( self.config, self.log )  
-        self.bamRegion = BamRegionViewer( self.config, minCov=self.minCov, minFreq=self.minFreq, logger=self.log )
+        self.bamRegion = BamRegionViewer( self.config, minCov=self.minCov, minFreq=self.minFreq, logger=self.log, callMode=callMode )
         self.coreVar   = pd.read_csv( self.config[ 'coreVariants' ], index_col=0 )
         self.coreMeta  = self._loadCoreMeta( self.config[ 'coreMetaData' ] )
         self.diplotype = Diplotype( self.config, self.log, self.coreMeta, grayscale )
@@ -54,6 +54,10 @@ class StarTyper:
         except BamViewer_Error as e:
             self.log.error( e.args[0] )
             return None
+        # check for common parameter mistake -- if no reads match ccs naming convention, might be consensus
+        if not self.readMeta.index.get_level_values('hifi_read').str.match(r'^.*/\d+/ccs$').any() \
+           and self.callMode != "consensus":
+            self.log.warn( 'Query names do not look like HiFi reads -- use \"consensus\" mode for consensus' )
         # call sv
         self.log.info( 'Identifying SV signatures' )
         self.svtyper.call_sv( self.sampleVars, self.readMeta )
@@ -87,22 +91,23 @@ class StarTyper:
         mask = self.readMeta.SV.fillna( 'noSV' ) == label 
         if label == 'noSV':
             mask &= self.readMeta[ 'cov_CYP2D6' ] > 0
-        grpReads = self.readMeta[ mask ]
+        grpIdxs = self.readMeta[ mask ].index
+        nrecs   = len(grpIdxs)
         # check that there is at least minCov reads to remove spurious stuff
-        if len( grpReads ) < self.minCov:
-            self.log.warning( f'Low Coverage call: {label} ({len( grpReads )}<{self.minCov})' )
+        if nrecs < self.minCov:
+            self.log.warning( f'Low Coverage call: {label} ({nrecs}<{self.minCov})' )
             return {}
         if updateHaplotype:
             clusters = None
-            if len( grpReads ) >= ( 2 * self.minCov ):
+            if nrecs >= ( 2 * self.minCov ):
                 self.log.debug( f'Attempting to phase {label} reads' )
-                clusters = self.bamRegion.updateHaplotypes( grpReads.index, label=label, 
+                clusters = self.bamRegion.updateHaplotypes( grpIdxs, label=label, 
                                                             window=self.config[ 'phaseWindows' ][ label ] )
-            # if no phasing, set HP to label_0
+            # if no phasing, set HP to {label}_0
             if clusters is None:
-                self.readMeta.loc[ grpReads.index, 'HP' ] = f'{label}_0'                
+                self.readMeta.loc[ grpIdxs, 'HP' ] = f'{label}_0'                
 
-        return cfunc( self, grpReads )
+        return cfunc( self, self.readMeta.loc[ grpIdxs ] )
         #TODO warn of low cov issues
         #if len( lowcov ):
         #    total = len( self.coreMatchesSpanning )
@@ -119,6 +124,9 @@ class StarTyper:
 
     def _get_dup_calls( self, reads ):
         round1_dups = pd.Series( self.matchStarAlleles( reads.index ) )
+        #for amp/consensus we don't need to resort -- just return original calls
+        if self.callMode in [ 'amplicon','consensus'] :
+            return round1_dups.to_dict()
         # after round one, we merge same allele dup/nosv and re-sort reads into first/last cyp2d6
         dupLabels = round1_dups.groupby( round1_dups ).apply( lambda d: list( d.index ) ).to_dict()
         noSV = self.diplotype.calls[ 'noSV' ]     
@@ -184,37 +192,39 @@ class StarTyper:
         byRead =  reads.SVlabel.map( self.svtyper.config[ 'starAlleles' ][ 'hybrid' ] )\
                        .fillna( '' ).map( tuple ).rename( 'call' )
         res = {}
-        for candidates,reads in self.readMeta.loc[ byRead.index ].join( byRead ).groupby( 'call' ):
-            if len( reads ) < self.minCov:
-                self.log.warning( f'Low-coverage hybrid called: {candidates} ({len(reads)}<{self.minCov})' )
+        for (hp,candidates),rds in self.readMeta.loc[ byRead.index ].join( byRead ).groupby( ['HP','call'] ):
+            if len( rds ) < self.minCov:
+                self.log.warning( f'Low-coverage hybrid called: {candidates} ({len(rds)}<{self.minCov})' )
                 continue
             if len( candidates ) > 1: #identify defining variants
                 #will this fail if some hybrid has no variants in the db?
                 candDf = self.coreMeta.loc[ map( self.diplotype.hapSortKey, candidates ) ]
                 candDf.index = candidates
                 candVars = pd.concat( candDf.varPos.values, keys=candDf.index )
-                indicators = candVars[ ~candVars.duplicated( keep=False ) ].reset_index(level=1, drop=True)
+                ind6 = candVars[ ~candVars.duplicated( keep=False ) ].reset_index(level=1, drop=True)
+                indicators = pd.concat( [ ind6, ind6.map( self.config['d6_d7_homologous_pos'] ) ], axis=1 )
+                indicators.index.name = 'allele'
                 #consensus at indicators
-                cons = self.bamRegion.getConsensusVariants( reads.index, positions=indicators )\
-                                       .assign( allele=indicators.index ).set_index( 'allele' )
-                #matching all indicators
-                matching = cons.groupby( 'allele' ).filter( lambda v: (v.VAR != '.').all() )
-                if matching.empty:
+                matchFound = False
+                for col in indicators.columns:
+                    cons = self.bamRegion.getConsensusVariants( rds.index, positions=indicators[col].dropna() )\
+                                         .assign( allele=indicators.index )\
+                                         .set_index( 'allele' )
+                    #matching all indicators
+                    matching = cons.groupby( 'allele' ).filter( lambda v: (v.VAR != '.').all() )
+                    if not matching.empty:
+                        newCand = (matching.index[0],)
+                        matchFound = True
+                        break
+                if not matchFound:
                     #select any allele(s) with no indicators as the new candidate list
                     newCand = tuple( candDf.index.difference( indicators.index ) )
                     if len( newCand ) == 0:
                         self.log.warning( f'Hybrid does not match any known allele!' )
                         newCand = candidates
-                else:
-                    newCand = (matching.index[0],)    
             else:
                 newCand = candidates
-            tags = sorted( reads.HP.unique() )
-            if len( tags ) > 1:
-                #tandem hybrid, update calls
-                newCand = tuple( f'{a}x{reads.HP.nunique()}' for a in newCand )
-                self.readMeta.loc[ reads.index, 'HP' ] = tags[0]
-            res[ tags[0] ] = newCand
+            res[ hp ] = newCand
         #if only a single "noSV" allele exists, try to split by looking at 
         #reads spanning both d6 and d7 -- is the d7 region "normal" or hybrid
         noSValleles = self.diplotype.calls.get( 'noSV', {} ) 
@@ -528,8 +538,8 @@ class Diplotype:
                         lbls = []
                         for a in [parent,allele]:
                             a_lbls = calls.pop(a)
-                            lbls.append( a_lbls[0] )
-                            calls[a] = a_lbls[1:]
+                            lbls.extend( a_lbls[:mult] )
+                            calls[a] = a_lbls[mult:]
                         self.haplotypes.append( ( f'{upstream}+{parent}', lbls ) )
                         nosv[ parent ] -= 1
                         pcount -= 1

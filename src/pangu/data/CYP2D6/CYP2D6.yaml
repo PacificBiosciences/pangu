@@ -17,8 +17,6 @@ phaseWindows:
     deletion:  [ 42120485, 42136630 ]
     hybrid:    [ -1, -1 ] # not used
 
-lowCoverageWarning: 10
-
 loci:
     CYP2D6: 1
     CYP2D7: 2
@@ -118,6 +116,11 @@ minFreq:  # min frequency reads to consider a variant
     capture: 0.1
     amplicon: 0.1
     consensus: 0 
+lowCoverageWarning: 
+    wgs: 10
+    capture: 10
+    amplicon: 10
+    consensus: 1
 
 # Star allele mappings of SV calls
 starAlleles:
@@ -145,6 +148,12 @@ starAlleles:
         '*61'    : [ '' ]
         '*63'    : [ '' ]
         '*10'    : [ '*10' ]
+
+d6_d7_homologous_pos:
+        42128944 : 42142639 # *4.013
+        42130691 : 42144364 # *36/*10
+        42127940 : 42141632 # *17
+        42129769 : 42143441 # *17
     
 # Core loader config
 impactScores:

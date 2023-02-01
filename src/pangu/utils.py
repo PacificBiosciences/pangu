@@ -1,4 +1,4 @@
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 import logging
 import sys
 import yaml
@@ -86,7 +86,7 @@ class BamRegionViewer:
                         maxInsertion = re.compile( r"\d+I" ) 
                     )
     
-    def __init__( self, config, resetHP=True, minCov=3, minFreq=0.1, logger=None, logFile='bamloader.log', verbose=False ):
+    def __init__( self, config, resetHP=True, minCov=3, minFreq=0.1, logger=None, logFile='bamloader.log', callMode='wgs', verbose=False ):
         self.config    = config
         self.reference = config[ 'reference' ]
         self.region    = config[ 'region' ]
@@ -96,6 +96,7 @@ class BamRegionViewer:
         self.maxClip   = config[ 'maxClip' ]
         self.minCov    = minCov
         self.minFreq   = minFreq
+        self.callMode  = callMode
         self.hpindex   = self._loadHP( config[ 'homopolymers' ] )
         self.resetHP   = resetHP
         self.vcf       = None
@@ -139,7 +140,7 @@ class BamRegionViewer:
             self.vcf = Vcf( vcf, region=self.region, geneRegion=self.config[ 'coreRegion' ] )
         # check for low coverage
         coverage = self.pileup.loc[ :, slice( *self.genes[ 'CYP2D6' ] ) ].notnull().sum()
-        if coverage.mean() < self.config[ 'lowCoverageWarning' ]:
+        if coverage.mean() < self.config[ 'lowCoverageWarning' ][ self.callMode ]:
             self.log.warning( f'LOW COVERAGE! MeanCov over gene: {coverage.mean():.3}' )
 
     def _loadHP( self, hpbed, tol=1 ):
@@ -290,21 +291,27 @@ class BamRegionViewer:
         return None  
 
     def _split_hybrids( self, idxs ):
-        '''First split by hybrid, if different, then Only split same-hybrids if they are in tandem'''
+        '''First split by hybrid, if different, then Only split same-hybrids if they are in tandem or mode=consensus'''
         reads  = self.readMeta.loc[ idxs ]
         offset = 0 #for unique cluster numbers
         res    = []
         for lbl,rds in reads.groupby( 'SVlabel' ):
             tandemReads = rds.hybrid_maploc.str.contains('\+')
             if tandemReads.sum() >= 2:
-                self.log.info( 'Tandem hybrid allele found' )
+                self.log.info( f'Found {tandemReads.sum()} reads with direct support for tandem hybrid' )
                 doubles = pd.Series( np.random.randint( 0, 2, tandemReads.sum() ), index=rds.index[ tandemReads ], name='HP' )
                 singles = pd.Series( rds[ ~tandemReads ].hybrid_maploc.factorize( sort=True )[0], index=rds.index[ ~tandemReads ], name='HP' )
                 res.append( pd.concat( [ singles, doubles ] )  + offset )
                 offset += 2
             else:
-                res.append( pd.Series( offset, index=rds.index, name='HP' ) )
-                offset += 1
+                if self.callMode == 'consensus' and len(rds) > 1:  # assume each pbaa consensus is unique
+                    incr = len( rds )
+                    vals = [ i + offset for i in range(incr) ]
+                else:
+                    incr = 1
+                    vals = offset
+                res.append( pd.Series( vals, index=rds.index, name='HP' ) )
+                offset += incr
         return pd.concat( res )
 
 
@@ -334,6 +341,7 @@ class BamRegionViewer:
             self.log.debug( f'Rejecting phasing due to {uncovVarpos.sum()} uncovered variants in one/both groups' )
             return False
         # reject tandem-dup splits unless we have minCov reads with SV signatures in each subset
+        #if label == 'duplicate' and round==2:
         if label == 'duplicate' and round==2:
             counts = self.readMeta.reindex( clusters.index )\
                          .query( 'SV=="duplicate"' )\
@@ -419,9 +427,9 @@ class BamRegionViewer:
         # some warnings
         dropped = res.coverage == 0
         lowcov  = res.coverage < self.minCov
-        if dropped.any() and not suppressWarnings:
+        if dropped.any() and not suppressWarnings and not self.callMode == 'consensus':
             self.log.warn( f'{dropped.sum()} bases in variant region with no coverage' )
-        if lowcov.any() and not suppressWarnings:
+        if lowcov.any() and not suppressWarnings and not self.callMode == 'consensus':
             self.log.warn( f'{lowcov.sum()} bases in variant region with coverage < {self.minCov}' )
         return res 
 

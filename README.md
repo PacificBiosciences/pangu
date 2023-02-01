@@ -2,8 +2,6 @@
 
 The PacBio star-typer (Pangu) for whole genome sequencing, capture, enrichment, and amplicon data. This caller leverages the accuracy and length of HiFi reads to confidently call star alleles, including structurally diverse alleles. The caller produces [pharmvar](https://www.pharmvar.org/gene/CYP2D6) compatible definitions. Currently calling CYP2D6.
 
-[ASHG 2022 Poster](https://www.pacb.com/wp-content/uploads/poster_harting.pdf)
-
 ## Demo Dataset
 
 See `demo_data` directory for example HiFi datasets.
@@ -145,6 +143,9 @@ Grayscale:
   * Updated install via pip and/or bioconda
   * Fixed copy number counting bug
 * 0.2.1 - Include GRCh38 reference in repo for cleaner install
+* 0.2.2 - Bug fixes
+  * Extend hybrid differentiating SNPs to CYP2D7 alignments
+  * Fix duplicate sorting for consensus and amplicons
 
 
 ## DISCLAIMER
