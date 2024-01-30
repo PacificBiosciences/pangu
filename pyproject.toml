@@ -19,8 +19,7 @@ dependencies = [
     "pysam>=0.19.1",
     "pyyaml",
     "numpy>=1.23.3",
-    "pandas>=1.5.0",
-    "scipy",
+    "pandas=1.5",
     "scikit-learn",
     "mappy>=2.24",
 ]
@@ -36,7 +35,7 @@ pangu = "pangu.__main__:main_cli"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"*" = ["*.yaml","*.csv.gz","*.csv","*.bed","*.txt", "*.fa*","*.fa*fai"]
+"*" = ["*.yaml","*.csv.gz","*.csv","*.bed","*.txt", "*.fa*", "*.fa*fai"]
 
 [tool.setuptools.dynamic]
 version = {attr = "pangu.__main__.__version__"}

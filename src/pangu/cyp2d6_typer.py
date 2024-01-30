@@ -271,8 +271,14 @@ class StarTyper:
                                   .set_index( 'pos' )\
                                   .join( variants ).dropna()
         getStar = self._starMatches( ( start, stop ) )
-        return { hp : getStar( coreMatches[ [ 'coreAllele', 'VAR', hp ] ].query( f'VAR == {hp}' ) )
-                for hp in coreMatches.columns[ 2: ] }        
+        return {
+         k : v for k,v in
+             {
+              hp : getStar( coreMatches[ [ 'coreAllele', 'VAR', hp ] ].query( f'VAR == {hp}' ) )
+              for hp in coreMatches.columns[ 2: ]
+             }.items()
+         if len(v) # add a filter for empty result sets
+        }
 
     def makeReport( self ):
         idxs = self.readMeta.query( 'HP != "-1"' ).index
@@ -443,7 +449,7 @@ class Diplotype:
         self.coreMeta   = coreMeta
         self.grayscale  = grayscale
         self.calls      = defaultdict( dict )
-        self.haplotypes = None
+        self.haplotypes = []
         self.diplotype  = None
 
     def __repr__( self ):
