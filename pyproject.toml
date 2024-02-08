@@ -19,7 +19,7 @@ dependencies = [
     "pysam>=0.19.1",
     "pyyaml",
     "numpy>=1.23.3",
-    "pandas=1.5",
+    "pandas>=1.5",
     "scikit-learn",
     "mappy>=2.24",
 ]
