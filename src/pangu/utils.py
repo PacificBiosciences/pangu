@@ -1,4 +1,4 @@
-__version__ = '0.2.2'
+__version__ = '0.2.4'
 import logging
 import sys
 import yaml
@@ -212,7 +212,7 @@ class BamRegionViewer:
 
     def _pileup( self ):
         return self.sampleVars.set_index( ['hifi_read','is_primary','pos'] )\
-                              .VAR.replace( ',', 1 )\
+                              .VAR.replace( ',', 'ref' )\
                               .unstack( 'pos' )
 
     @staticmethod
@@ -359,7 +359,8 @@ class BamRegionViewer:
             Sr = diagsvd( s[ :r ], r, Vh.shape[ 0 ] )
             return Ur @ Sr @ Vh.T
         # observed matrx R in { ref: 1, alt:-1, nodata:0 }
-        R = pd.concat( [ p.calls.where( p.calls.isin( [ 0, 1 ] ), -1 ) for p in varPos.sort_index() ], axis=1 ).fillna( 0 )
+        cats = { 'ref': 1, 'nc': 0 }
+        R = pd.concat([ p.calls.map(cats).where( p.calls.isin( cats.keys() ), -1 ) for p in varPos.sort_index() ], axis=1 ).fillna(0)
         # include dummy constant feature
         R = pd.concat( [ R, pd.Series( 1, index=R.index, name='dummy' ) ], axis=1 )
         # down project to rank
@@ -394,10 +395,10 @@ class BamRegionViewer:
 
     def _getVariablePos( self, idxs, minGroups=2, window=None, maxIndel=50, minEntropy=0 ):
         ' return vect of Position objects where >= ( minCov - 1 ) reads are non-reference calls '
-        # refcall = 1
+        # refcall = 'ref'
         start,stop = ( None,None ) if window is None else window
         pileup = self.fetch( idxs, start=start, stop=stop, dropnull=[ False, True ] )
-        nonRef = ( ( pileup != 1 ) & ( pileup != '*' ) & pileup.notnull() ).sum( axis=0 ) >= self.minCov
+        nonRef = ( ( pileup != 'ref' ) & ( pileup != '*' ) & pileup.notnull() ).sum( axis=0 ) >= self.minCov
         pcolumn = pileup.loc[ :, nonRef ].apply( lambda c: PileupColumn( c, minCov=self.minCov, minFreq=self.minFreq, dropna=False ) )
         return pcolumn[ pcolumn.map( self._filter_pcolumns( minGroups=minGroups, maxIndel=maxIndel ) ) ]
 
@@ -421,7 +422,7 @@ class BamRegionViewer:
         plurality = counts.apply( lambda c: c.idxmax() ) if len( counts ) \
                     else pd.Series( None, index=counts.columns, dtype=int )
         support   = counts.apply( lambda c: c.max() ).fillna( 0 ).astype( int )
-        variants  = plurality[ plurality != 1 ]
+        variants  = plurality[ plurality != 'ref' ]
         res       = pd.concat( [ coverage, variants, support ], axis=1 ).fillna( '.' )
         res.columns = [ 'coverage', 'VAR', 'support' ]
         # some warnings
@@ -462,7 +463,7 @@ class BamRegionViewer:
         return jaccard
     
 class PileupColumn:
-    def __init__( self, callVector, minCov=3, minFreq=0.1, refCall=1, chrom=None, dropna=True ):
+    def __init__( self, callVector, minCov=3, minFreq=0.1, refCall='ref', chrom=None, dropna=True ):
         self.chr     = chrom
         self.pos     = callVector.name
         self.minCov  = minCov
@@ -482,7 +483,7 @@ class PileupColumn:
         return read in self.calls.index
 
     def _getCalls( self, callVector ):
-        nocall = 0
+        nocall = 'nc'
         def _kind( variant ):
             if variant == self.refCall: return 'refCall'
             if variant == nocall: return 'nocall'

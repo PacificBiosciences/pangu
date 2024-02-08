@@ -7,11 +7,15 @@ import logging
 import json
 from pathlib import Path
 from itertools import repeat
+import warnings
 from pangu.cyp2d6_typer import StarTyper
 
 def main( parser ):
     args = parser.parse_args()
 
+    # silence pandas v2 future warnings
+    warnings.simplefilter(action='ignore', category=FutureWarning)
+    
     # set up output prefix
     path = Path( args.prefix )
     if path.is_dir():
