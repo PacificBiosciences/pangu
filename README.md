@@ -146,6 +146,10 @@ Grayscale:
 * 0.2.2 - Bug fixes
   * Extend hybrid differentiating SNPs to CYP2D7 alignments
   * Fix duplicate sorting for consensus and amplicons
+* 0.2.3 - Bug fixes, still broken
+* 0.2.4 - Bug fixes
+  * Fix pandas v2 error
+  * Suppress futurwarnings from pandas
 
 
 ## DISCLAIMER
