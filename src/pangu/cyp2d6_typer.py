@@ -1,4 +1,4 @@
-__version__ = '0.2.4'
+__version__ = '0.2.5'
 import pysam
 import re
 import os
@@ -513,7 +513,7 @@ class Diplotype:
                 found = True
             if not found: #no parent -> issue/problem call
                 self.log.error( f'No DUP parent found for tandem {allele}' )
-                self.haplotypes.append( ( f'{allele}x{dcount}', calls.pop(allele), mult ) )
+                self.haplotypes.append( ( f'{allele}x{dcount}', calls.pop(allele), dcount) )
                 dups[ allele ] -= dcount
 
         # merge hybrid haps

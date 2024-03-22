@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-__version__ = '0.2.3'
+__version__ = '0.2.5'
 import sys
 import os
 import logging
@@ -90,6 +90,7 @@ def main_cli():
     now  = datetime.now().strftime( '%Y-%m-%d_%H%M%S' )
 
     parser = argparse.ArgumentParser( prog='pangu', description='Call CYP2D6 star alleles from HiFi WGS data' )
+    parser.add_argument('-V', '--version', action='version', version=f'%(prog)s {__version__}')
     parser.add_argument( 'inBam', metavar='inBam', nargs='*', type=str, help='Aligned BAM file(s) of HiFi WGS reads' )
 
     inputp = parser.add_argument_group( 'Input Options' )
