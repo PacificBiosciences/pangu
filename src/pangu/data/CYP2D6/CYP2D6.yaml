@@ -1,6 +1,6 @@
 #data files
 data_files:
-    reference: GRCh38_chr22.fa
+    reference: GRCh38_chr22.fa.gz
     diff_sites: diff_sites_CYP2D6.csv
     homopolymers: hp_3.bed
     coreVariants: corevar.5.1.10.csv.gz
@@ -10,7 +10,7 @@ data_files:
 region: 'chr22:42118571-42146092'
  # positions encompassing all core variants, incl upstream promoters (pharmvar)
 coreRegion: [ 42126305, 42132395 ]
-phaseWindows: 
+phaseWindows:
     noSV:      [ 42120485, 42136630 ]
     duplicate: [ 42123443, 42135040 ]
     #duplicate: [ 42123443, 42135246 ]
