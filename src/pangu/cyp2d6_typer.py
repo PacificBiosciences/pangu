@@ -1,4 +1,4 @@
-__version__ = '0.2.5'
+__version__ = '0.2.6'
 import pysam
 import re
 import os
@@ -272,12 +272,8 @@ class StarTyper:
                                   .join( variants ).dropna()
         getStar = self._starMatches( ( start, stop ) )
         return {
-         k : v for k,v in
-             {
               hp : getStar( coreMatches[ [ 'coreAllele', 'VAR', hp ] ].query( f'VAR == {hp}' ) )
               for hp in coreMatches.columns[ 2: ]
-             }.items()
-         if len(v) # add a filter for empty result sets
         }
 
     def makeReport( self ):
@@ -341,10 +337,16 @@ class StarTyper:
             if matches.empty: # and add a coverage check?
                 return ( '*1', )
             else:
-                return tuple( sorted( matches.groupby( 'coreAllele' )\
+                res = sorted( matches.groupby( 'coreAllele' )\
                                              .apply( self._hasAllCoreVars( region ) )\
                                              .where( lambda x:x ).dropna().index,
-                                      key=self._alleleSort ) )
+                              key=self._alleleSort )
+                if len(res) == 0: # only partial hits, but some core variants here
+                    part = ','.join( matches.coreAllele.unique() )
+                    self.log.warn( f"Partial hits on core alleles {part}, defaulting to *1")
+                    return ('*1',)
+                else:                    
+                    return tuple( res )
         return _getstar
 
     # caller list 
