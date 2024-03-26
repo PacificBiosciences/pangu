@@ -150,6 +150,9 @@ Grayscale:
 * 0.2.4 - Bug fixes
   * Fix pandas v2 error
   * Suppress futurwarnings from pandas
+* 0.2.5 - Bug Fixes (WRONG)
+* 0.2.6 - Bug fixes to correct 0.2.5 fix
+  * Partial hits (some but not all core variants) default to *1 but report contains warning with partially-matching allele names
 
 
 ## DISCLAIMER
