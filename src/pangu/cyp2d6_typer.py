@@ -1,4 +1,4 @@
-__version__ = '0.2.6'
+__version__ = '0.2.7'
 import pysam
 import re
 import os
@@ -515,7 +515,7 @@ class Diplotype:
                 found = True
             if not found: #no parent -> issue/problem call
                 self.log.error( f'No DUP parent found for tandem {allele}' )
-                self.haplotypes.append( ( f'{allele}x{dcount}', calls.pop(allele), dcount) )
+                self.haplotypes.append( ( f'{allele}x{dcount}', calls.pop(allele) ) )
                 dups[ allele ] -= dcount
 
         # merge hybrid haps
@@ -617,7 +617,12 @@ class Diplotype:
             if len( lbls ) == 1:
                 kind = lbls[0].split('_')[0]
             else:
-                kind = ( { lbl.split('_')[0] for lbl in lbls } - {'noSV'} ).pop()
+                try:
+                    kind = ( { lbl.split('_')[0] for lbl in lbls } - {'noSV'} ).pop()
+                except KeyError: 
+                    # catch case where all alleles are the same, but some sv (eg *10+*10/*10)
+                    # this is just a patch to prevent the program from failing to color the outputs
+                    kind = '-1'
             return kind, colors[ kind ]
         default = ','.join( map( str, colors[ '-1' ][ 'base' ] ) )
         cmap = defaultdict( lambda: default )
