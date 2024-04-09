@@ -153,6 +153,8 @@ Grayscale:
 * 0.2.5 - Bug Fixes (WRONG)
 * 0.2.6 - Bug fixes to correct 0.2.5 fix
   * Partial hits (some but not all core variants) default to *1 but report contains warning with partially-matching allele names
+* 0.2.7 - Catch reporting of missing dup parent 
+* 0.2.8 - Fix pharmcat tsv output for missing alleles
 
 
 ## DISCLAIMER
