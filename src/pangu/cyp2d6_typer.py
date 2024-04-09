@@ -1,4 +1,4 @@
-__version__ = '0.2.7'
+__version__ = '0.2.8'
 import pysam
 import re
 import os
@@ -465,7 +465,9 @@ class Diplotype:
                 return f'[{" + ".join( hap.split("+") )}]'
             else:
                 return hap
-        return f'{gene}\t{"/".join( getPharmCat( hap ) for hap,_ in self.haplotypes )}'
+        # when pangu returns a single call, we need to pad it out for pharmcat
+        haps = self.haplotypes + [("[]","")] if len(self.haplotypes) == 1 else self.haplotypes
+        return f'{gene}\t{"/".join( getPharmCat( hap ) for hap,_ in haps )}'
     
     def reset( self ):
         self.__init__( self.config, self.log, self.coreMeta, self.grayscale )
