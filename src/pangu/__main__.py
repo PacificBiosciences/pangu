@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-__version__ = '0.2.7'
+__version__ = '0.2.8'
 import sys
 import os
 import logging
